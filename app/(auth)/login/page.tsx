@@ -21,7 +21,7 @@ import { z,} from 'zod';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { loginSchema, LoginInput } from '../../../lib/schemas/auth.schema'
-import { showSuccessNotification, showErrorNotification, showWarningNotification } from '@/lib/nortifications';
+import { showSuccessNotification, showErrorNotification, showWarningNotification } from '@/lib/notifications';
 
 
 export default function LoginPage() {
@@ -65,68 +65,27 @@ export default function LoginPage() {
       const data = await res.json();
       if (data.result === 'success') {
         // 1. Save user data to Zustand for the UI
-        setAuth(data.data.user, data.data.token)
-        
+        setAuth(data.data.user, data.data.token);
+
         // 2. Save the JWT to an HttpOnly cookie via Server Action
         await createSession(data.data.token);
-        
+        showSuccessNotification('Login Success', data.message || 'Credentials authenticated');
         // 3. Redirect to the protected dashboard
         router.push('/dashboard');
       } else {
-        // Handle login failure (e.g., show Mantine notification)
-        console.error(data.message);
+        // Handle login failure
+        showErrorNotification('Login Failed', data.message || 'Incorrect credentials');
+        reset({
+          login: values.login, // Keep the login they entered
+          password: '', // Clear the password
+        });
       }
-
-      // if (response.ok && data.status) {
-      //   // Cookie is already set by Laravel backend with HttpOnly flag
-      //   // No need for: document.cookie = ...
-
-      //   // Store token in localStorage for API requests (header: x-account-session-token)
-      //   if (data.token) {
-      //     localStorage.setItem('token', data.token);
-      //   }
-
-      //   // Store user information for UI display
-      //   if (data.user) {
-      //     localStorage.setItem('user', JSON.stringify(data.user));
-      //   }
-
-      //   showSuccessNotification(
-      //     'Login Success',
-      //     data.message || 'Credentials authenticated'
-      //   );
-
-      //   // Redirect to dashboard or intended page
-      //   router.push('/dashboard');
-      // } else {
-      //   showErrorNotification(
-      //     'Login Failed',
-      //     data.message || 'Incorrect credentials'
-      //   );
-      //   reset({
-      //     login: values.login, // Keep the login they entered
-      //     password: '', // Clear the password
-      //   });
-      // }
     } catch (error) {
-      showErrorNotification(
-        'Error',
-        'Something went wrong. Please try again.'
-      );
+      showErrorNotification('Error', 'Something went wrong. Please try again.');
       console.error('Login error:', error);
     } finally {
       setLoading(false);
     }
-
-    console.log({
-      login: values.login,
-      password: values.password,
-        });
-     showErrorNotification(
-          'Login Failed',
-          'Incorrect credentials'
-        );
-        console.log('hdjskahdjksahjdsa')
   };
 
   return (

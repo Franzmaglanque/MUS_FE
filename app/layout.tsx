@@ -1,9 +1,11 @@
 import '@mantine/core/styles.css';
 import '@mantine/dates/styles.css';       // 1. Add this for date filtering features
 import 'mantine-react-table/styles.css';  // 2. Add this for the table styles
+import '@mantine/notifications/styles.css';
 
 import React from 'react';
 import { ColorSchemeScript, mantineHtmlProps, MantineProvider } from '@mantine/core';
+import { Notifications } from '@mantine/notifications';
 import { theme } from '../theme';
 import QueryProvider from '@/components/QueryProvider';
 import { AppShellLayout } from '@/components/AppShellLayout/AppShellLayout';
@@ -22,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <QueryProvider>
           <MantineProvider theme={theme}>
+            <Notifications />
             {/* Wrap your children in the new Shell */}
             {children}
           </MantineProvider>

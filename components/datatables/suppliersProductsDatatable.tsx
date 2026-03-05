@@ -15,6 +15,8 @@ import { IconEdit, IconTrash, IconPlus } from '@tabler/icons-react';
 import { useMutation } from '@tanstack/react-query';
 import { updateProduct } from '@/api/product_api';
 import { useQueryClient } from '@tanstack/react-query';
+import { showSuccessNotification, showErrorNotification, showWarningNotification } from '@/lib/notifications';
+
 
 type SupplierProducts = {
     id: number;
@@ -38,15 +40,13 @@ export const SupplierProductsDatatable = ({ products,vendor_code }: SupplierProd
         mutationFn: updateProduct,
         onSuccess: () => {
             console.log('Product updated!');
-            // queryClient.invalidateQueries()
+           
         },
         onError: (error: any) => {
             console.error(error);
         },
     });
     
-
-
     const columns = useMemo<MRT_ColumnDef<SupplierProducts>[]>(
         () => [
         {
@@ -132,12 +132,27 @@ export const SupplierProductsDatatable = ({ products,vendor_code }: SupplierProd
             ...values,
             vendor_code:vendor_code
         }
-        await updateProductMutation.mutateAsync(params);
+        try {
+            const updateResponse = await updateProductMutation.mutateAsync(params);
 
-        table.setEditingRow(null); // ✅ close only if success
-        setValidationErrors({});
+            // 3. Handle your custom API response statuses
+            if (updateResponse.status === 'SUCCESS') {
+                showSuccessNotification('Success', updateResponse.message || 'Update success');
 
-        table.setEditingRow(null); 
+                queryClient.invalidateQueries({ queryKey: ['Supplier', vendor_code] });
+                
+                // ✅ Only close the modal and clear errors if it actually succeeded
+                table.setEditingRow(null); 
+                setValidationErrors({});
+            } else {
+                
+                showErrorNotification('Failed', updateResponse.message || 'Update Failed');
+            }
+        } catch (error) {
+            // ❌ Network failed completely. Leave modal open and notify user.
+            console.error('Mutation failed:', error);
+            showErrorNotification('Error', 'A network error occurred while updating the product.');
+        }
     };
 
     const handleDeleteProduct = (row: any) => {
