@@ -2,30 +2,63 @@
 
 import { 
     Title, Button, Text, Group, Paper, Badge, Grid, Container, 
-    Skeleton, SimpleGrid, Tabs, ThemeIcon, rem 
+    Skeleton, SimpleGrid, Tabs, ThemeIcon, rem, 
+    FileButton,
+    Modal,
+    FileInput
 } from '@mantine/core';
 import { 
     IconArrowLeft, IconPackage, IconUsers, IconReceipt2, 
-    IconCurrencyDollar, IconInfoCircle, IconTrendingUp
+    IconCurrencyDollar, IconInfoCircle, IconTrendingUp,
+    IconUpload
 } from '@tabler/icons-react';
 import { useParams, useRouter } from 'next/navigation';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchSupplierDetails } from '@/api/supplier_api';
 import SupplierProductsDatatable from '@/components/datatables/suppliersProductsDatatable';
-// import SupplierUsersDatatable from '@/components/datatables/supplierUsersDatatable';
-// import SupplierOrdersDatatable from '@/components/datatables/supplierOrdersDatatable';
+import { showErrorNotification, showSuccessNotification } from '@/lib/notifications';
+import { useDisclosure } from '@mantine/hooks';
+import { useState } from 'react';
+import { bulkUploadProducts } from '@/api/product_api';
 
 export default function SupplierDetailsPage() {
     const params = useParams();
     const router = useRouter();
+    const queryClient = useQueryClient();
     const supplierCode = params.id as string; 
+
+    // --- NEW: Modal & File State ---
+    const [uploadModalOpened, { open: openUploadModal, close: closeUploadModal }] = useDisclosure(false);
+    const [selectedFile, setSelectedFile] = useState<File | null>(null);
+    // -------------------------------
 
     const { data: supplier, isLoading } = useQuery({
         queryKey: ['Supplier', supplierCode],
         queryFn: () => fetchSupplierDetails(supplierCode)
     });
 
-    // 1. Loading State (Shows full page skeleton)
+    const uploadBulkMutation = useMutation({
+        mutationFn: async (file: File) => bulkUploadProducts(file,supplierCode),
+        onSuccess: () => {
+            showSuccessNotification('Success', 'Bulk products uploaded successfully!');
+            queryClient.invalidateQueries({ queryKey: ['Supplier', supplierCode] });
+            
+            // NEW: Close the modal and reset the file input on success
+            closeUploadModal();
+            setSelectedFile(null);
+        },
+        onError: (error) => {
+            console.error(error);
+            showErrorNotification('Upload Failed', 'There was an error processing the Excel file.');
+        }
+    });
+
+    const handleUploadSubmit = () => {
+        if (selectedFile) {
+            uploadBulkMutation.mutate(selectedFile);
+        }
+    };  
+
     if (isLoading) {
         return (
             <Container fluid px={0}>
@@ -46,6 +79,47 @@ export default function SupplierDetailsPage() {
 
     return (
         <Container fluid px={0}>
+            {/* --- UPLOAD MODAL --- */}
+            <Modal 
+                opened={uploadModalOpened} 
+                onClose={() => {
+                    closeUploadModal();
+                    setSelectedFile(null); // Clear file if they cancel
+                }} 
+                title={<Text fw={700}>Bulk Upload Products</Text>}
+                centered
+            >
+                <Text size="sm" c="dimmed" mb="md">
+                    Please upload an Excel (.xlsx, .xls) or CSV file. The file should contain the required columns: SKU, Barcode, Description, and Price.
+                </Text>
+
+                <FileInput
+                    label="Select File"
+                    placeholder="Click to choose a file"
+                    accept=".xlsx, .xls, .csv"
+                    value={selectedFile}
+                    onChange={setSelectedFile}
+                    clearable
+                    leftSection={<IconUpload size={16} />}
+                    mb="xl"
+                />
+
+                <Group justify="flex-end">
+                    <Button variant="default" onClick={closeUploadModal}>
+                        Cancel
+                    </Button>
+                    <Button 
+                        color="teal" 
+                        onClick={handleUploadSubmit}
+                        loading={uploadBulkMutation.isPending}
+                        disabled={!selectedFile} // Prevent clicking if no file is chosen
+                    >
+                        Upload
+                    </Button>
+                </Group>
+            </Modal>
+            {/* -------------------- */}
+
             {/* --- HEADER --- */}
             <Group mb="md">
                 <Button 
@@ -122,6 +196,25 @@ export default function SupplierDetailsPage() {
                             Supplier Info
                         </Tabs.Tab>
                     </Tabs.List>
+
+                    {/* NEW: Upload Button Group */}
+                    <Tabs.Panel value="products">
+                        <Group justify="flex-end" mb="md" mt="md">
+                            {/* Changed from FileButton to a standard Button that opens the Modal */}
+                            <Button 
+                                leftSection={<IconUpload size={16} />}
+                                color="teal"
+                                onClick={openUploadModal}
+                            >
+                                Bulk Upload Excel
+                            </Button>
+                        </Group>
+                        
+                        <SupplierProductsDatatable 
+                            products={supplier.supplierProducts ?? []} 
+                            vendor_code={supplierCode} 
+                        />
+                    </Tabs.Panel>
 
                     {/* Products Tab */}
                     <Tabs.Panel value="products">
