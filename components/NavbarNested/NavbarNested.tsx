@@ -10,14 +10,17 @@ import {
   IconSettings,
   IconShield,
   IconBuildingFactory,
+  IconFileAnalytics,
 } from '@tabler/icons-react';
 import { useState } from 'react';
 
 const data = [
   { icon: IconDashboard, label: 'Dashboard',link:'/dashboard' },
+  { icon: IconBuildingFactory, label: 'Manage Suppliers',link:'/supplier' },
+  // { icon: IconFileAnalytics , label: 'Reports', link: '/reports' },
   {
-    icon: IconNews,
-    label: 'Market news',
+    icon: IconFileAnalytics,
+    label: 'Reports',
     links: [
       { label: 'Overview', link: '/news/overview' },
       { label: 'Forecasts', link: '/news/forecasts' },
@@ -25,24 +28,24 @@ const data = [
       { label: 'Real time', link: '/news/real-time' },
     ],
   },
-  {
-    icon: IconCalendar,
-    label: 'Releases',
-    links: [
-      { label: 'Upcoming', link: '/releases/upcoming' },
-      { label: 'Past', link: '/releases/past' },
-    ],
-  },
-  { icon: IconChartLine, label: 'Analytics' },
-  { icon: IconFileText, label: 'Contracts' },
-  { icon: IconSettings, label: 'Settings' },
-  { icon: IconShield, label: 'Security' },
-  { icon: IconBuildingFactory, label: 'Manage Suppliers',link:'/supplier' },
+  // {
+  //   icon: IconCalendar,
+  //   label: 'Releases',
+  //   links: [
+  //     { label: 'Upcoming', link: '/releases/upcoming' },
+  //     { label: 'Past', link: '/releases/past' },
+  //   ],
+  // },
+  // { icon: IconChartLine, label: 'Analytics' },
+  // { icon: IconFileText, label: 'Contracts' },
+  // { icon: IconSettings, label: 'Settings' },
+  // { icon: IconShield, label: 'Security' },
+ 
 
 ];
 
 export function NavbarNested() {
-    // Optional: keep track of the active main link if you want highlight states
+
 const [active, setActive] = useState('Dashboard');
 const items = data.map((item) => {
     // 2. Check if the item has sub-links
@@ -66,7 +69,6 @@ const items = data.map((item) => {
         childrenOffset={28} // This controls the indent of the sub-menu items
         href={item.link}
     >
-        {/* If nestedLinks exists, Mantine automatically makes this a dropdown! */}
         {nestedLinks}
     </NavLink>
     );
